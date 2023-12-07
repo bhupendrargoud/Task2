@@ -1,0 +1,60 @@
+version: '3'
+
+services:
+  # MySQL Database Service
+  mysql:
+    build:
+      dockerfile: Dockerfile.dev
+      context: ./mysql
+    ports:
+      - "3306:3306"
+    
+    environment:
+      MYSQL_ROOT_PASSWORD: Ps1234
+      MYSQL_DATABASE: nodedb
+    volumes:
+      - ./data:/var/lib/mysql
+  # nginx
+  nginx:
+    depends_on:
+      - api
+      - client
+    restart: always
+    build:
+      dockerfile: Dockerfile.dev
+      context: ./nginx
+    ports:
+      - "3000:80"
+  # Node.js Backend Service
+  api:
+    build:
+      dockerfile: Dockerfile.dev
+      context: "./server"
+    volumes:
+      - /app/node_modules
+      - ./server:/app
+    environment:
+      DB_HOST: mysql
+      DB_USER: root
+      DB_PASSWORD: Ps1234
+      DB_DATABASE: nodedb
+    ports:
+      - "5000:5000"
+    depends_on:
+      - mysql
+    
+     
+
+  # React.js Frontend Service
+  client:
+    stdin_open: true
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+    build:
+      dockerfile: Dockerfile.dev
+      context: ./client
+    volumes:
+      - /app/node_modules
+      - ./client:/app
+    depends_on:
+      - api
